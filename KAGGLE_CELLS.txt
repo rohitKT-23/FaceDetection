@@ -1,0 +1,161 @@
+# Kaggle Notebook - Copy-Paste Ready Code
+# Har cell ko alag-alag Kaggle notebook mein paste karo
+
+# ============================================
+# CELL 1: Setup & Clone Repository
+# ============================================
+!git clone https://github.com/rohitKT-23/FaceDetection.git
+%cd FaceDetection
+!pip install ultralytics opencv-python albumentations matplotlib pillow pyyaml tqdm pandas -q
+
+print("\n" + "="*60)
+print("✓ Setup Complete!")
+print("="*60)
+
+
+# ============================================
+# CELL 2: Verify GPU
+# ============================================
+import torch
+import sys
+
+print(f"Python: {sys.version}")
+print(f"PyTorch: {torch.__version__}")
+print(f"CUDA Available: {torch.cuda.is_available()}")
+
+if torch.cuda.is_available():
+    print(f"GPU: {torch.cuda.get_device_name(0)}")
+    print(f"GPU Memory: {torch.cuda.get_device_properties(0).total_memory / 1e9:.2f} GB")
+    print("\n✓ GPU Ready!")
+else:
+    print("\n⚠️  Enable GPU in Settings!")
+
+
+# ============================================
+# CELL 3: Check Dataset
+# ============================================
+# Add WIDER FACE dataset: Click "+ Add Data" → Search "WIDER FACE"
+!ls /kaggle/input/
+
+
+# ============================================
+# CELL 4: Convert Dataset to YOLO Format
+# ============================================
+# Adjust path based on your dataset location
+!python src/convert_dataset.py \
+    --wider-root /kaggle/input/widerface \
+    --output-root data/widerface \
+    --splits train val
+
+!ls data/widerface/images/
+!ls data/widerface/labels/
+
+
+# ============================================
+# CELL 5: Update Config for Kaggle
+# ============================================
+import yaml
+
+with open('configs/yolov8_face.yaml', 'r') as f:
+    config = yaml.safe_load(f)
+
+config['path'] = 'data/widerface'
+config['epochs'] = 50
+config['batch'] = 32  # GPU has more memory
+config['device'] = 0
+config['workers'] = 8
+
+with open('configs/yolov8_face.yaml', 'w') as f:
+    yaml.dump(config, f)
+
+print("✓ Config updated!")
+print(f"  Epochs: {config['epochs']}")
+print(f"  Batch: {config['batch']}")
+
+
+# ============================================
+# CELL 6: Start Training (1-2 hours)
+# ============================================
+!python src/train.py \
+    --config configs/yolov8_face.yaml \
+    --model-size n
+
+print("\n" + "="*60)
+print("✓ Training Complete!")
+print("="*60)
+
+
+# ============================================
+# CELL 7: View Results
+# ============================================
+import pandas as pd
+from IPython.display import Image, display
+
+results = pd.read_csv('runs/detect/yolov8_face/results.csv')
+print("Last 10 Epochs:")
+print(results.tail(10))
+
+final = results.iloc[-1]
+print(f"\nFinal Metrics:")
+print(f"  mAP@0.5: {final['metrics/mAP50(B)']:.4f}")
+print(f"  Precision: {final['metrics/precision(B)']:.4f}")
+print(f"  Recall: {final['metrics/recall(B)']:.4f}")
+
+
+# ============================================
+# CELL 8: Display Plots
+# ============================================
+from IPython.display import Image, display
+
+print("Training Results:")
+display(Image('runs/detect/yolov8_face/results.png'))
+
+print("\nConfusion Matrix:")
+display(Image('runs/detect/yolov8_face/confusion_matrix.png'))
+
+
+# ============================================
+# CELL 9: Test Inference
+# ============================================
+!python src/infer.py \
+    --model runs/detect/yolov8_face/weights/best.pt \
+    --source data/widerface/images/val/ \
+    --output-dir outputs/test
+
+# Show sample result
+import os
+from IPython.display import Image, display
+
+test_imgs = [f for f in os.listdir('outputs/test') if f.endswith('.jpg')]
+if test_imgs:
+    display(Image(f'outputs/test/{test_imgs[0]}'))
+
+
+# ============================================
+# CELL 10: Save Model (IMPORTANT!)
+# ============================================
+# Copy to Kaggle output for download
+!cp runs/detect/yolov8_face/weights/best.pt /kaggle/working/best_yolov8_face.pt
+!cp runs/detect/yolov8_face/results.csv /kaggle/working/training_results.csv
+!cp runs/detect/yolov8_face/results.png /kaggle/working/training_plots.png
+
+print("✓ Files saved!")
+print("\nDownload from: Notebook → Output → Download")
+!ls -lh /kaggle/working/
+
+
+# ============================================
+# CELL 11: Benchmark (Optional)
+# ============================================
+!python src/benchmark.py \
+    --model runs/detect/yolov8_face/weights/best.pt \
+    --data configs/yolov8_face.yaml \
+    --runs 100
+
+import json
+with open('outputs/benchmark/benchmark_report.json') as f:
+    bench = json.load(f)
+
+print(f"\nBenchmark:")
+print(f"  FPS: {bench['speed']['mean_fps']:.2f}")
+print(f"  Latency: {bench['speed']['mean_latency_ms']:.2f} ms")
