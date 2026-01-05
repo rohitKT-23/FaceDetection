@@ -54,6 +54,8 @@ dataset/
 weights/*.pt
 weights/*.onnx
 !weights/.gitkeep
+*.pt
+*.onnx
 
 # Training outputs
 runs/
