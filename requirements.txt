@@ -1,0 +1,24 @@
+# Core Dependencies (Python 3.14 Compatible)
+ultralytics>=8.0.0
+opencv-python
+numpy
+torch
+torchvision
+
+# Data Augmentation
+albumentations
+
+# Visualization & UI
+streamlit
+matplotlib
+pillow
+
+# Utilities
+pyyaml
+tqdm
+pandas
+
+# Model Export (Optional - requires Python <=3.12)
+# onnx>=1.14.0
+# onnxruntime>=1.15.0
+# Note: For ONNX support, use Python 3.10-3.12 or install manually if available
