@@ -1,0 +1,659 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>YOLOv8 Face Detection - Real-time AI</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 100vh;
+        padding: 20px;
+      }
+
+      .container {
+        max-width: 1400px;
+        margin: 0 auto;
+      }
+
+      header {
+        text-align: center;
+        color: white;
+        margin-bottom: 40px;
+      }
+
+      h1 {
+        font-size: 3em;
+        margin-bottom: 10px;
+        text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+      }
+
+      .subtitle {
+        font-size: 1.2em;
+        opacity: 0.9;
+      }
+
+      .stats-bar {
+        background: rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(10px);
+        border-radius: 15px;
+        padding: 20px;
+        margin-bottom: 30px;
+        display: flex;
+        justify-content: space-around;
+        flex-wrap: wrap;
+        gap: 20px;
+      }
+
+      .stat-item {
+        text-align: center;
+        color: white;
+      }
+
+      .stat-value {
+        font-size: 2em;
+        font-weight: bold;
+        display: block;
+      }
+
+      .stat-label {
+        font-size: 0.9em;
+        opacity: 0.8;
+      }
+
+      .main-content {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 30px;
+      }
+
+      @media (max-width: 1024px) {
+        .main-content {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      .card {
+        background: white;
+        border-radius: 20px;
+        padding: 30px;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+      }
+
+      .card-title {
+        font-size: 1.8em;
+        margin-bottom: 20px;
+        color: #667eea;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .icon {
+        font-size: 1.2em;
+      }
+
+      .upload-area {
+        border: 3px dashed #667eea;
+        border-radius: 15px;
+        padding: 40px;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.3s;
+        margin-bottom: 20px;
+      }
+
+      .upload-area:hover {
+        background: #f8f9ff;
+        border-color: #764ba2;
+      }
+
+      .upload-area.dragover {
+        background: #f0f4ff;
+        border-color: #764ba2;
+        transform: scale(1.02);
+      }
+
+      input[type="file"] {
+        display: none;
+      }
+
+      .btn {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border: none;
+        padding: 15px 40px;
+        border-radius: 30px;
+        font-size: 1.1em;
+        cursor: pointer;
+        transition: all 0.3s;
+        box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+      }
+
+      .btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+      }
+
+      .btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+
+      .slider-container {
+        margin: 20px 0;
+      }
+
+      .slider {
+        width: 100%;
+        height: 8px;
+        border-radius: 5px;
+        background: #ddd;
+        outline: none;
+        -webkit-appearance: none;
+      }
+
+      .slider::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        appearance: none;
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        background: #667eea;
+        cursor: pointer;
+      }
+
+      .slider::-moz-range-thumb {
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        background: #667eea;
+        cursor: pointer;
+      }
+
+      #webcam-video,
+      #webcam-canvas {
+        width: 100%;
+        border-radius: 15px;
+        margin: 10px 0;
+      }
+
+      .result-container {
+        margin-top: 20px;
+        padding: 20px;
+        background: #f8f9ff;
+        border-radius: 15px;
+      }
+
+      .result-image,
+      .result-video {
+        width: 100%;
+        border-radius: 15px;
+        margin-top: 10px;
+      }
+
+      .detection-info {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 15px;
+        margin-top: 15px;
+      }
+
+      .info-box {
+        background: white;
+        padding: 15px;
+        border-radius: 10px;
+        text-align: center;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+      }
+
+      .info-value {
+        font-size: 2em;
+        font-weight: bold;
+        color: #667eea;
+      }
+
+      .info-label {
+        font-size: 0.9em;
+        color: #666;
+        margin-top: 5px;
+      }
+
+      .loading {
+        display: none;
+        text-align: center;
+        padding: 20px;
+      }
+
+      .loading.active {
+        display: block;
+      }
+
+      .spinner {
+        border: 4px solid #f3f3f3;
+        border-top: 4px solid #667eea;
+        border-radius: 50%;
+        width: 50px;
+        height: 50px;
+        animation: spin 1s linear infinite;
+        margin: 0 auto;
+      }
+
+      @keyframes spin {
+        0% {
+          transform: rotate(0deg);
+        }
+        100% {
+          transform: rotate(360deg);
+        }
+      }
+
+      .webcam-controls {
+        display: flex;
+        gap: 10px;
+        margin-top: 15px;
+        justify-content: center;
+      }
+
+      .detection-list {
+        max-height: 300px;
+        overflow-y: auto;
+        margin-top: 15px;
+      }
+
+      .detection-item {
+        background: white;
+        padding: 10px;
+        margin: 5px 0;
+        border-radius: 8px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .confidence-badge {
+        background: #667eea;
+        color: white;
+        padding: 5px 15px;
+        border-radius: 20px;
+        font-weight: bold;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <header>
+        <h1>👤 YOLOv8 Face Detection</h1>
+        <p class="subtitle">Real-time AI-powered Face Detection System</p>
+      </header>
+
+      <div class="stats-bar">
+        <div class="stat-item">
+          <span class="stat-value">65.3%</span>
+          <span class="stat-label">mAP@0.5</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-value">83.8%</span>
+          <span class="stat-label">Precision</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-value">340 FPS</span>
+          <span class="stat-label">GPU Speed</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-value">6.2 MB</span>
+          <span class="stat-label">Model Size</span>
+        </div>
+      </div>
+
+      <div class="main-content">
+        <!-- Upload Section -->
+        <div class="card">
+          <h2 class="card-title">
+            <span class="icon">📁</span>
+            Upload Image/Video
+          </h2>
+
+          <div class="upload-area" id="uploadArea">
+            <p style="font-size: 3em; margin-bottom: 10px">📤</p>
+            <p style="font-size: 1.2em; margin-bottom: 10px">
+              Drag & Drop or Click to Upload
+            </p>
+            <p style="color: #666">Supports: JPG, PNG, MP4, AVI</p>
+            <input type="file" id="fileInput" accept="image/*,video/*" />
+          </div>
+
+          <div class="slider-container">
+            <label
+              >Confidence Threshold: <span id="confValue">0.50</span></label
+            >
+            <input
+              type="range"
+              min="0"
+              max="100"
+              value="50"
+              class="slider"
+              id="confSlider"
+            />
+          </div>
+
+          <button class="btn" id="processBtn" disabled>🚀 Detect Faces</button>
+
+          <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <p style="margin-top: 15px">Processing...</p>
+          </div>
+
+          <div
+            class="result-container"
+            id="resultContainer"
+            style="display: none"
+          >
+            <h3>Results</h3>
+            <div id="resultContent"></div>
+          </div>
+        </div>
+
+        <!-- Webcam Section -->
+        <div class="card">
+          <h2 class="card-title">
+            <span class="icon">📹</span>
+            Live Webcam Detection
+          </h2>
+
+          <video
+            id="webcam-video"
+            autoplay
+            playsinline
+            style="display: none"
+          ></video>
+          <canvas id="webcam-canvas"></canvas>
+
+          <div class="slider-container">
+            <label>Confidence: <span id="webcamConfValue">0.50</span></label>
+            <input
+              type="range"
+              min="0"
+              max="100"
+              value="50"
+              class="slider"
+              id="webcamConfSlider"
+            />
+          </div>
+
+          <div class="webcam-controls">
+            <button class="btn" id="startWebcam">▶️ Start Webcam</button>
+            <button class="btn" id="stopWebcam" style="display: none">
+              ⏹️ Stop Webcam
+            </button>
+          </div>
+
+          <div class="detection-info" id="webcamStats" style="display: none">
+            <div class="info-box">
+              <div class="info-value" id="webcamFaces">0</div>
+              <div class="info-label">Faces Detected</div>
+            </div>
+            <div class="info-box">
+              <div class="info-value" id="webcamFps">0</div>
+              <div class="info-label">FPS</div>
+            </div>
+          </div>
+
+          <div class="detection-list" id="webcamDetections"></div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // File upload handling
+      const uploadArea = document.getElementById("uploadArea");
+      const fileInput = document.getElementById("fileInput");
+      const processBtn = document.getElementById("processBtn");
+      const confSlider = document.getElementById("confSlider");
+      const confValue = document.getElementById("confValue");
+      const loading = document.getElementById("loading");
+      const resultContainer = document.getElementById("resultContainer");
+      const resultContent = document.getElementById("resultContent");
+
+      let selectedFile = null;
+
+      // Upload area click
+      uploadArea.addEventListener("click", () => fileInput.click());
+
+      // Drag and drop
+      uploadArea.addEventListener("dragover", (e) => {
+        e.preventDefault();
+        uploadArea.classList.add("dragover");
+      });
+
+      uploadArea.addEventListener("dragleave", () => {
+        uploadArea.classList.remove("dragover");
+      });
+
+      uploadArea.addEventListener("drop", (e) => {
+        e.preventDefault();
+        uploadArea.classList.remove("dragover");
+        const files = e.dataTransfer.files;
+        if (files.length > 0) {
+          selectedFile = files[0];
+          processBtn.disabled = false;
+          uploadArea.innerHTML = `<p style="font-size: 1.2em;">✅ ${files[0].name}</p>`;
+        }
+      });
+
+      fileInput.addEventListener("change", (e) => {
+        if (e.target.files.length > 0) {
+          selectedFile = e.target.files[0];
+          processBtn.disabled = false;
+          uploadArea.innerHTML = `<p style="font-size: 1.2em;">✅ ${e.target.files[0].name}</p>`;
+        }
+      });
+
+      // Confidence slider
+      confSlider.addEventListener("input", (e) => {
+        confValue.textContent = (e.target.value / 100).toFixed(2);
+      });
+
+      // Process button
+      processBtn.addEventListener("click", async () => {
+        if (!selectedFile) return;
+
+        const formData = new FormData();
+        formData.append("file", selectedFile);
+        formData.append("confidence", confSlider.value / 100);
+
+        loading.classList.add("active");
+        resultContainer.style.display = "none";
+        processBtn.disabled = true;
+
+        try {
+          const response = await fetch("/upload", {
+            method: "POST",
+            body: formData,
+          });
+
+          const result = await response.json();
+
+          loading.classList.remove("active");
+          resultContainer.style.display = "block";
+          processBtn.disabled = false;
+
+          if (result.type === "image") {
+            resultContent.innerHTML = `
+                        <div class="detection-info">
+                            <div class="info-box">
+                                <div class="info-value">${
+                                  result.num_faces
+                                }</div>
+                                <div class="info-label">Faces Detected</div>
+                            </div>
+                        </div>
+                        <img src="${
+                          result.output_image
+                        }" class="result-image" alt="Result">
+                        <div class="detection-list">
+                            ${result.detections
+                              .map(
+                                (d, i) => `
+                                <div class="detection-item">
+                                    <span>Face ${i + 1}</span>
+                                    <span class="confidence-badge">${(
+                                      d.confidence * 100
+                                    ).toFixed(1)}%</span>
+                                </div>
+                            `
+                              )
+                              .join("")}
+                        </div>
+                    `;
+          } else {
+            resultContent.innerHTML = `
+                        <div class="detection-info">
+                            <div class="info-box">
+                                <div class="info-value">${
+                                  result.total_detections
+                                }</div>
+                                <div class="info-label">Total Detections</div>
+                            </div>
+                            <div class="info-box">
+                                <div class="info-value">${result.avg_faces_per_frame.toFixed(
+                                  1
+                                )}</div>
+                                <div class="info-label">Avg Faces/Frame</div>
+                            </div>
+                        </div>
+                        <video src="${
+                          result.output_video
+                        }" class="result-video" controls></video>
+                    `;
+          }
+        } catch (error) {
+          loading.classList.remove("active");
+          processBtn.disabled = false;
+          alert("Error processing file: " + error.message);
+        }
+      });
+
+      // Webcam handling
+      const webcamVideo = document.getElementById("webcam-video");
+      const webcamCanvas = document.getElementById("webcam-canvas");
+      const webcamCtx = webcamCanvas.getContext("2d");
+      const startWebcamBtn = document.getElementById("startWebcam");
+      const stopWebcamBtn = document.getElementById("stopWebcam");
+      const webcamConfSlider = document.getElementById("webcamConfSlider");
+      const webcamConfValue = document.getElementById("webcamConfValue");
+      const webcamStats = document.getElementById("webcamStats");
+      const webcamFaces = document.getElementById("webcamFaces");
+      const webcamFps = document.getElementById("webcamFps");
+      const webcamDetections = document.getElementById("webcamDetections");
+
+      let webcamStream = null;
+      let webcamInterval = null;
+      let frameCount = 0;
+      let lastTime = Date.now();
+
+      webcamConfSlider.addEventListener("input", (e) => {
+        webcamConfValue.textContent = (e.target.value / 100).toFixed(2);
+      });
+
+      startWebcamBtn.addEventListener("click", async () => {
+        try {
+          webcamStream = await navigator.mediaDevices.getUserMedia({
+            video: { width: 640, height: 480 },
+          });
+          webcamVideo.srcObject = webcamStream;
+
+          webcamVideo.onloadedmetadata = () => {
+            webcamCanvas.width = webcamVideo.videoWidth;
+            webcamCanvas.height = webcamVideo.videoHeight;
+            startWebcamBtn.style.display = "none";
+            stopWebcamBtn.style.display = "inline-block";
+            webcamStats.style.display = "grid";
+            processWebcamFrame();
+          };
+        } catch (error) {
+          alert("Error accessing webcam: " + error.message);
+        }
+      });
+
+      stopWebcamBtn.addEventListener("click", () => {
+        if (webcamStream) {
+          webcamStream.getTracks().forEach((track) => track.stop());
+          webcamStream = null;
+        }
+        if (webcamInterval) {
+          clearInterval(webcamInterval);
+          webcamInterval = null;
+        }
+        startWebcamBtn.style.display = "inline-block";
+        stopWebcamBtn.style.display = "none";
+        webcamStats.style.display = "none";
+      });
+
+      async function processWebcamFrame() {
+        if (!webcamStream) return;
+
+        webcamCtx.drawImage(webcamVideo, 0, 0);
+        const imageData = webcamCanvas.toDataURL("image/jpeg");
+
+        try {
+          const response = await fetch("/webcam", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              image: imageData,
+              confidence: webcamConfSlider.value / 100,
+            }),
+          });
+
+          const result = await response.json();
+
+          // Update canvas with result
+          const img = new Image();
+          img.onload = () => {
+            webcamCtx.drawImage(img, 0, 0);
+          };
+          img.src = result.image;
+
+          // Update stats
+          webcamFaces.textContent = result.num_faces;
+
+          // Calculate FPS
+          frameCount++;
+          const now = Date.now();
+          if (now - lastTime >= 1000) {
+            webcamFps.textContent = frameCount;
+            frameCount = 0;
+            lastTime = now;
+          }
+
+          // Update detections list
+          webcamDetections.innerHTML = result.detections
+            .map(
+              (d, i) => `
+                    <div class="detection-item">
+                        <span>Face ${i + 1}</span>
+                        <span class="confidence-badge">${(
+                          d.confidence * 100
+                        ).toFixed(1)}%</span>
+                    </div>
+                `
+            )
+            .join("");
+        } catch (error) {
+          console.error("Webcam processing error:", error);
+        }
+
+        // Process next frame
+        setTimeout(processWebcamFrame, 100); // 10 FPS
+      }
+    </script>
+  </body>
+</html>
