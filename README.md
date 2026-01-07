@@ -154,7 +154,7 @@ Get model statistics
 
 ## 🚀 Deployment
 
-### Local
+### Local Development
 
 ```bash
 python app.py
@@ -167,12 +167,55 @@ pip install gunicorn
 gunicorn -w 4 -b 0.0.0.0:5000 app:app
 ```
 
-### Docker
+### 🐳 Docker (Recommended)
+
+#### Quick Start with Docker Compose
 
 ```bash
-docker build -t face-detection .
-docker run -p 5000:5000 face-detection
+# Start application
+docker-compose up -d
+
+# View logs
+docker-compose logs -f
+
+# Stop application
+docker-compose down
 ```
+
+Access at: **http://localhost:5000**
+
+#### Docker Run
+
+```bash
+# Build image
+docker build -t face-detection .
+
+# Run container
+docker run -d \
+  -p 5000:5000 \
+  -v $(pwd)/uploads:/app/uploads \
+  -v $(pwd)/outputs:/app/outputs \
+  --name face-detection-app \
+  face-detection
+```
+
+#### With Nginx Reverse Proxy
+
+```bash
+# Start with nginx
+docker-compose --profile with-nginx up -d
+```
+
+Access at: **http://localhost** (port 80)
+
+**📖 See [DOCKER_GUIDE.md](DOCKER_GUIDE.md) for complete Docker documentation**
+
+### Cloud Deployment
+
+- **AWS**: ECS, EC2, or Lambda
+- **GCP**: Cloud Run, Compute Engine
+- **Azure**: Container Instances, App Service
+- **Heroku**: Container deployment
 
 ## 📸 Screenshots
 

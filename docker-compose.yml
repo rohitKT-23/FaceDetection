@@ -1,0 +1,60 @@
+version: "3.8"
+
+services:
+  # Face Detection Web Application
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: face-detection-app
+    ports:
+      - "5000:5000"
+    volumes:
+      # Persist uploads and outputs
+      - ./uploads:/app/uploads
+      - ./outputs:/app/outputs
+      # Mount model files (read-only)
+      - ./best_yolov8_face.pt:/app/best_yolov8_face.pt:ro
+      - ./best_yolov8_face.onnx:/app/best_yolov8_face.onnx:ro
+    environment:
+      - FLASK_ENV=production
+      - PYTHONUNBUFFERED=1
+    restart: unless-stopped
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import requests; requests.get('http://localhost:5000/stats')",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - face-detection-network
+
+  # Optional: Nginx reverse proxy
+  nginx:
+    image: nginx:alpine
+    container_name: face-detection-nginx
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - web
+    restart: unless-stopped
+    networks:
+      - face-detection-network
+    profiles:
+      - with-nginx
+
+networks:
+  face-detection-network:
+    driver: bridge
+
+volumes:
+  uploads:
+  outputs:

@@ -1,1 +1,99 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual environments
+venv/
+venv-gpu/
+ENV/
+env/
+.venv
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb_checkpoints
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+*.cover
+coverage.xml
+.cache
+
+# Logs
+*.log
+logs/
+
+# Dataset files (too large for git)
+data/
+dataset/
+WIDER_train/
+WIDER_val/
+wider_face_split/
+
+# Training outputs
+runs/
+weights/
+wandb/
+
+# Temporary files
+uploads/
+outputs/
+temp/
+tmp/
+*.tmp
+*.cache
+
+# OS files
+Thumbs.db
+.DS_Store
+
+# Model files (keep only essential ones)
+*.pt
+!best_yolov8_face.pt
+!last_yolov8_face.pt
+*.onnx
+!best_yolov8_face.onnx
+
+# Large media files
+*.mp4
+*.avi
+*.mov
+*.mkv
+
+# Specific files
 FACE_RECOGNITION_PLAN.md
+test_images/
+
+# Docker
+.dockerignore
+docker-compose.override.yml
