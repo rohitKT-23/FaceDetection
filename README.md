@@ -875,4 +875,4 @@ If you use this project in your research, please cite:
 
 ---
 
-**Last Updated**: January 2024
+**Last Updated**: January 2026
